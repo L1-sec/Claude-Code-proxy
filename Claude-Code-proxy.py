@@ -8,10 +8,15 @@ from openai import OpenAI
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 配置
-NVIDIA_API_KEY = "nvapi-****************************************"
-NVIDIA_MODEL = "mistralai/mistral-nemotron"
-NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
+# 英伟达
+# API_KEY = "nvapi-*******************************************"
+# MODEL = "mistralai/mistral-nemotron"
+# BASE_URL = "https://integrate.api.nvidia.com/v1"
+
+# sensenova
+API_KEY = "sk-************************************"
+MODEL = "deepseek-v4-flash"
+BASE_URL = "https://token.sensenova.cn/v1"
 
 app = Flask(__name__)
 
@@ -73,8 +78,8 @@ def messages():
 
         # 强制使用 NVIDIA 模型
         requested_model = data.get("model", "unknown")
-        if requested_model != NVIDIA_MODEL:
-            print(f"模型替换: {requested_model} -> {NVIDIA_MODEL}")
+        if requested_model != MODEL:
+            print(f"模型替换: {requested_model} -> {MODEL}")
 
         claude_messages = data.get("messages", [])
         print(f"收到 {len(claude_messages)} 条消息")
@@ -85,8 +90,8 @@ def messages():
 
         # 调用 NVIDIA API
         client = OpenAI(
-            base_url=NVIDIA_BASE_URL,
-            api_key=NVIDIA_API_KEY,
+            base_url=BASE_URL,
+            api_key=API_KEY,
             timeout=60.0
         )
 
@@ -115,7 +120,7 @@ def handle_sync(client, messages, original_data):
     try:
         print("发送同步请求到 NVIDIA...")
         response = client.chat.completions.create(
-            model=NVIDIA_MODEL,
+            model=MODEL,
             messages=messages,
             max_tokens=original_data.get("max_tokens", 4096),
             temperature=original_data.get("temperature", 0.7),
@@ -130,7 +135,7 @@ def handle_sync(client, messages, original_data):
             "id": f"msg_{uuid.uuid4().hex}",
             "type": "message",
             "role": "assistant",
-            "model": NVIDIA_MODEL,
+            "model": MODEL,
             "content": [
                 {
                     "type": "text",
@@ -159,7 +164,7 @@ def handle_stream(client, messages, original_data):
         try:
             print("发送流式请求到 NVIDIA...")
             stream_response = client.chat.completions.create(
-                model=NVIDIA_MODEL,
+                model=MODEL,
                 messages=messages,
                 max_tokens=original_data.get("max_tokens", 4096),
                 temperature=original_data.get("temperature", 0.7),
@@ -170,7 +175,7 @@ def handle_stream(client, messages, original_data):
             message_id = f"msg_{uuid.uuid4().hex}"
 
             # 发送 message_start
-            yield f"event: message_start\ndata: {json.dumps({'type': 'message_start', 'message': {'id': message_id, 'type': 'message', 'role': 'assistant', 'model': NVIDIA_MODEL, 'content': [], 'stop_reason': None, 'stop_sequence': None, 'usage': {'input_tokens': 0, 'output_tokens': 0}}})}\n\n"
+            yield f"event: message_start\ndata: {json.dumps({'type': 'message_start', 'message': {'id': message_id, 'type': 'message', 'role': 'assistant', 'model': MODEL, 'content': [], 'stop_reason': None, 'stop_sequence': None, 'usage': {'input_tokens': 0, 'output_tokens': 0}}})}\n\n"
 
             # 发送 content_block_start
             yield f"event: content_block_start\ndata: {json.dumps({'type': 'content_block_start', 'index': 0, 'content_block': {'type': 'text', 'text': ''}})}\n\n"
@@ -237,9 +242,9 @@ def models():
                 "created_at": int(time.time())
             },
             {
-                "id": NVIDIA_MODEL,
+                "id": MODEL,
                 "type": "model",
-                "display_name": NVIDIA_MODEL,
+                "display_name": MODEL,
                 "created_at": int(time.time())
             }
         ]
@@ -248,21 +253,21 @@ def models():
 
 @app.route("/", methods=["GET"])
 def root():
-    return jsonify({"status": "ok", "model": NVIDIA_MODEL, "note": "Claude Code proxy for NVIDIA API"})
+    return jsonify({"status": "ok", "model": MODEL, "note": "Claude Code proxy for NVIDIA API"})
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  NVIDIA Claude Code Proxy (最终修复版)")
+    print("  Claude Code Proxy (最终修复版)")
     print("=" * 60)
     print(f"  代理地址: http://127.0.0.1:5000")
-    print(f"  使用模型: {NVIDIA_MODEL}")
+    print(f"  使用模型: {MODEL}")
     print("=" * 60)
     print("\n请按以下步骤操作:")
     print("1. 在 Claude Code 终端设置环境变量:")
     print("   set ANTHROPIC_BASE_URL=http://127.0.0.1:5000")
     print("   set ANTHROPIC_AUTH_TOKEN=dummy")
-    print(f"   set ANTHROPIC_MODEL={NVIDIA_MODEL}")
+    print(f"   set ANTHROPIC_MODEL={MODEL}")
     print("   claude")
     print("=" * 60)
     print("\n代理已启动，等待连接...\n")
